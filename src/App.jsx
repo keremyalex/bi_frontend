@@ -25,6 +25,11 @@ function App() {
   const [columnaXFull, setColumnaXFull] = useState("");
   const [columnaYFull, setColumnaYFull] = useState("");
   const [tipoGrafico, setTipoGrafico] = useState("bar");
+  const [pregunta, setPregunta] = useState("");
+  const [sqlGenerado, setSqlGenerado] = useState("");
+
+  const [respuestaAI, setRespuestaAI] = useState([]);
+  
 
   const conectar = async () => {
     const url = `postgresql://${user}:${encodeURIComponent(password)}@${host}:${port}/${dbname}`;
@@ -96,6 +101,43 @@ function App() {
       toast.success("✅ Gráfico generado con joins");
     } catch (error) {
       toast.error("Error al generar gráfico con joins");
+    }
+  };
+
+  const generarGraficoDesdePregunta = async () => {
+    if (!pregunta || !dbUrl) {
+      toast.error("Debe escribir una pregunta y estar conectado a la base de datos");
+      return;
+    }
+    try {
+      const res = await axios.get("http://localhost:8000/generar-consulta", {
+        params: { db_url: dbUrl, pregunta }
+      });
+      if (!res.data.datos || res.data.datos.length === 0) {
+        toast.error("La consulta no devolvió resultados");
+        return;
+      }
+      setDatos(res.data.datos);
+      setSqlGenerado(res.data.sql);
+      setColumnaXFull(res.data.columnas[0]);
+      setColumnaYFull(res.data.columnas[1]);
+      setTipoGrafico("bar");
+      toast.success("✅ Gráfico generado desde lenguaje natural");
+    } catch (error) {
+      toast.error("Error al generar gráfico: " + (error.response?.data?.detail || error.message));
+    }
+  };
+
+  const generarDesdeAI = async (pregunta) => {
+    try {
+      const res = await axios.get("http://localhost:8000/generar-consulta", {
+        params: { db_url: dbUrl, pregunta }
+      });
+      setSqlGenerado(res.data.sql);
+      setRespuestaAI(res.data.datos);
+      toast.success("🧠 Consulta generada por IA");
+    } catch (error) {
+      toast.error("Error al generar gráfico: " + (error.response?.data?.detail || error.message));
     }
   };
 
@@ -216,9 +258,61 @@ function App() {
         </div>
       )}
 
+      {/* {dbUrl && (
+        <div className="bg-white rounded-xl shadow p-6 space-y-4">
+          <h2 className="text-xl font-semibold">💬 Pregunta en lenguaje natural</h2>
+          <input
+            className="input w-full"
+            placeholder="Ej: ¿Cuál es el total de ventas por mes?"
+            value={pregunta}
+            onChange={e => setPregunta(e.target.value)}
+          />
+          <button
+            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
+            onClick={generarGraficoDesdePregunta}
+            disabled={!pregunta}
+          >
+            Generar gráfico desde texto
+          </button>
+        </div>
+      )} */}
+  {dbUrl && (
+    <div className="bg-white rounded-xl shadow p-6 space-y-4">
+      <h2 className="text-xl font-semibold">🧠 Consulta con OpenAI</h2>
+      <input
+        type="text"
+        className="input w-full"
+        placeholder="Ej: Total de ventas por empleado"
+        onKeyDown={(e) => {
+          if (e.key === "Enter") generarDesdeAI(e.target.value);
+        }}
+      />
+    </div>
+  )}
+
+  {sqlGenerado && (
+      <div className="bg-white rounded-xl shadow p-6 space-y-4">
+        <h3 className="text-lg font-semibold">📄 Consulta SQL generada</h3>
+        <pre className="bg-gray-100 p-4 rounded font-mono overflow-x-auto text-sm">
+          {sqlGenerado}
+        </pre>
+    
+        {respuestaAI.length > 0 && (
+          <PlotlyChart
+            xData={respuestaAI.map(d => Object.values(d)[0])}
+            yData={respuestaAI.map(d => Object.values(d)[1])}
+            title="Gráfico generado por IA"
+          />
+        )}
+      </div>
+    )}
+
+
       <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );
+
+
 }
 
 export default App;
