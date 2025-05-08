@@ -1,12 +1,45 @@
-# React + Vite
+# 📊 Mini BI Frontend (React + Plotly + TailwindCSS)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Este proyecto React se conecta a una base de datos PostgreSQL a través de una API construida con FastAPI, permitiendo al usuario:
 
-Currently, two official plugins are available:
+- Conectarse a una base de datos.
+- Visualizar tablas y sus columnas.
+- Generar gráficos de barras, líneas o tortas con Plotly.
+- Consultar en lenguaje natural usando OpenAI y graficar los resultados.
+- Exportar los datos a CSV.
+- Ver el diagrama relacional de las tablas con React Flow.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## Expanding the ESLint configuration
+## 🚀 Tecnologías
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- React 18+
+- Vite
+- Tailwind CSS
+- Axios
+- Plotly.js
+- React Flow
+- React Toastify
+- Papaparse + FileSaver.js
+
+---
+
+## ⚙️ Requisitos
+
+- Node.js 16 o superior
+- Tener el backend corriendo en `http://localhost:8000`
+
+---
+
+## 📦 Instalación
+
+```bash
+# 1. Clona el repositorio
+git clone https://github.com/keremyalex/bi_frontend.git
+cd bi_frontend
+
+# 2. Instala las dependencias
+npm install
+
+# 3. Ejecución
+npm run dev
