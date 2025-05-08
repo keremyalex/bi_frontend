@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { saveAs } from "file-saver";
 import { unparse } from "papaparse";
 import PlotlyChart from "./components/PlotlyChart";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import DatabaseDiagram from "./components/DatabaseDiagram";
 
 function App() {
   const [host, setHost] = useState("localhost");
@@ -23,6 +24,7 @@ function App() {
   const [todasColumnas, setTodasColumnas] = useState([]);
   const [columnaXFull, setColumnaXFull] = useState("");
   const [columnaYFull, setColumnaYFull] = useState("");
+  const [tipoGrafico, setTipoGrafico] = useState("bar");
 
   const conectar = async () => {
     const url = `postgresql://${user}:${encodeURIComponent(password)}@${host}:${port}/${dbname}`;
@@ -71,6 +73,11 @@ function App() {
   };
 
   const generarGraficoJoin = async () => {
+    if (!columnaXFull || !columnaYFull) {
+      toast.error("Debe seleccionar tanto la columna X como la columna Y");
+      return;
+    }
+
     try {
       const res = await axios.get("http://localhost:8000/consulta-join", {
         params: {
@@ -79,7 +86,13 @@ function App() {
           columna_y: columnaYFull
         }
       });
+      if (!res.data || res.data.length === 0) {
+        toast.error("❌ No se encontraron datos para generar el gráfico");
+        setDatos([]);
+        return;
+      }
       setDatos(res.data);
+      setTipoGrafico("bar"); // gráfico por defecto
       toast.success("✅ Gráfico generado con joins");
     } catch (error) {
       toast.error("Error al generar gráfico con joins");
@@ -92,14 +105,16 @@ function App() {
       return;
     }
     const csv = unparse(datos);
-    // Agrega BOM para UTF-8
     const BOM = "\uFEFF";
     const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8;" });
-    // Fecha y hora actual para el nombre del archivo
     const fecha = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
     const nombreArchivo = `datos-grafico-${fecha}.csv`;
     saveAs(blob, nombreArchivo);
   };
+
+  useEffect(() => {
+    // Aquí se podría añadir lógica adicional si el tipo de gráfico requiere condiciones especiales
+  }, [tipoGrafico]);
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-800 p-6 space-y-8">
@@ -122,6 +137,12 @@ function App() {
           Conectar
         </button>
       </div>
+      {dbUrl && (
+        <div className="bg-white rounded-xl shadow p-6 space-y-4 mt-6">
+          <h2 className="text-xl font-semibold">📡 Diagrama de Relaciones</h2>
+          <DatabaseDiagram dbUrl={dbUrl} />
+        </div>
+      )}
 
       {todasColumnas.length > 0 && (
         <div className="bg-white rounded-xl shadow p-6 space-y-4">
@@ -157,7 +178,7 @@ function App() {
             </div>
           </div>
           <button
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition mt-4"
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition mt-4 disabled:opacity-50"
             onClick={generarGraficoJoin}
             disabled={!columnaXFull || !columnaYFull}
           >
@@ -168,23 +189,34 @@ function App() {
 
       {datos.length > 0 && (
         <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">📈 Resultado</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">📈 Resultado</h2>
+            <select
+              className="input"
+              value={tipoGrafico}
+              onChange={(e) => setTipoGrafico(e.target.value)}
+            >
+              <option value="bar">📊 Barras</option>
+              <option value="line">📈 Líneas</option>
+              <option value="pie">🥧 Torta</option>
+            </select>
+          </div>
           <PlotlyChart
             xData={datos.map(d => d.x)}
             yData={datos.map(d => d.y)}
+            type={tipoGrafico}
             title={`Gráfico de ${columnaYFull} por ${columnaXFull}`}
           />
-                <button
-                  className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition mt-4"
-                  onClick={exportarCSV}
-      >
-                  📥 Exportar a CSV
-                </button>
+          <button
+            className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition mt-4"
+            onClick={exportarCSV}
+          >
+            📥 Exportar a CSV
+          </button>
         </div>
       )}
 
       <ToastContainer position="top-right" autoClose={3000} />
-
     </div>
   );
 }
